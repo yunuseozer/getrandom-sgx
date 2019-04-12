@@ -5,6 +5,7 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+#[cfg(not(feature = "mesalock_sgx"))]
 extern crate std;
 
 use crate::{error::UNKNOWN_IO_ERROR, Error};

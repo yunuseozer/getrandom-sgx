@@ -60,6 +60,14 @@ impl Error {
     }
 }
 
+mod libc {
+    #[link(name = "sgx_tstdc")]
+    extern {
+        pub fn strerror_r(errnum: sgx_libc::c_int, buf: * mut sgx_libc::c_char, buflen: sgx_libc::size_t) -> sgx_libc::c_int;
+    }
+    pub use sgx_libc::c_char;
+}
+
 cfg_if! {
     if #[cfg(unix)] {
         fn os_err(errno: i32, buf: &mut [u8]) -> Option<&str> {

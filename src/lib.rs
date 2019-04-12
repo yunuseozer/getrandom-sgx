@@ -131,6 +131,14 @@
 #![cfg_attr(feature = "stdweb", recursion_limit = "128")]
 #![warn(rust_2018_idioms, unused_lifetimes, missing_docs)]
 
+#![cfg_attr(all(target_env = "sgx", target_vendor = "mesalock"), feature(rustc_private))]
+#[cfg(all(feature = "mesalock_sgx", not(target_env = "sgx")))]
+#[macro_use]
+extern crate sgx_tstd as std;
+
+#[cfg(all(feature = "mesalock_sgx",target_env = "sgx"))]
+extern crate std;
+
 #[macro_use]
 extern crate cfg_if;
 
@@ -155,6 +163,15 @@ cfg_if! {
     }
 }
 
+#[cfg(all(feature = "std", not(feature = "mesalock_sgx")))]
+extern crate std;
+
+#[cfg(all(feature = "std", feature = "mesalock_sgx", target_env = "sgx"))]
+extern crate sgx_trts;
+
+#[cfg(all(feature = "std", feature = "mesalock_sgx", target_env = "sgx"))]
+extern crate sgx_libc;
+
 mod error;
 pub use crate::error::Error;
 
@@ -165,6 +182,7 @@ mod util;
 #[allow(dead_code)]
 mod util_libc;
 
+#[cfg(not(feature = "mesalock_sgx"))]
 cfg_if! {
     // Unlike the other Unix, Fuchsia and iOS don't use the libc to make any calls.
     if #[cfg(any(target_os = "android", target_os = "dragonfly", target_os = "emscripten",
@@ -180,10 +198,13 @@ cfg_if! {
     }
 }
 
+#[cfg(feature = "mesalock_sgx")]
+mod error_impls;
+
 // These targets read from a file as a fallback method.
 #[cfg(any(
     target_os = "android",
-    target_os = "linux",
+    all(target_os = "linux", not(feature = "mesalock_sgx")),
     target_os = "macos",
     target_os = "solaris",
     target_os = "illumos",
@@ -194,7 +215,9 @@ mod use_file;
 //
 // These should all provide getrandom_inner with the same signature as getrandom.
 cfg_if! {
-    if #[cfg(target_os = "android")] {
+    if #[cfg(feature = "mesalock_sgx")] {
+        #[path = "mesalock_sgx.rs"] mod imp;
+    } else if #[cfg(target_os = "android")] {
         #[path = "linux_android.rs"] mod imp;
     } else if #[cfg(target_os = "cloudabi")] {
         #[path = "cloudabi.rs"] mod imp;
