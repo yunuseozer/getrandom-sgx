@@ -60,11 +60,16 @@ impl Error {
     }
 }
 
+#[link(name = "sgx_tstdc")]
+extern {
+    fn strerror_r(errnum: sgx_libc::c_int, buf: * mut sgx_libc::c_char, buflen: sgx_libc::size_t) -> sgx_libc::c_int;
+}
+
 cfg_if! {
     if #[cfg(unix)] {
         fn os_err_desc(errno: i32, buf: &mut [u8]) -> Option<&str> {
-            let buf_ptr = buf.as_mut_ptr() as *mut libc::c_char;
-            if unsafe { libc::strerror_r(errno, buf_ptr, buf.len()) } != 0 {
+            let buf_ptr = buf.as_mut_ptr() as *mut sgx_libc::c_char;
+            if unsafe { strerror_r(errno, buf_ptr, buf.len()) } != 0 {
                 return None;
             }
 
